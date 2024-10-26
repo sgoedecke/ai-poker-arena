@@ -1,0 +1,161 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Poker Tournament</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+        
+        .game-main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .community-cards {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .player-card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .player-card.active {
+            border: 2px solid #007bff;
+        }
+        
+        .card {
+            display: inline-block;
+            width: 40px;
+            height: 60px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 0 5px;
+            text-align: center;
+            line-height: 60px;
+            background: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .game-info {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-log {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+
+        .log-entries {
+            height: 600px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Poker Tournament</h1>
+    <div class="game-container">
+        <div class="game-main">
+            <div class="game-info">
+                <div>Hand #<span id="handNumber">1</span></div>
+                <div>Round: <span id="round">preflop</span></div>
+                <div>Pot: $<span id="pot">0</span></div>
+            </div>
+            
+            <div class="community-cards">
+                <h2>Community Cards</h2>
+                <div id="communityCards"></div>
+            </div>
+            
+            <div class="players-grid" id="players"></div>
+        </div>
+
+        <div class="game-log">
+            <h2>Game Log</h2>
+            <div class="log-entries" id="gameLog"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        function updateGameState(gameState) {
+            // Update game info
+            document.getElementById('handNumber').textContent = gameState.handNumber;
+            document.getElementById('round').textContent = gameState.round;
+            document.getElementById('pot').textContent = gameState.pot;
+            
+            // Update community cards
+            const communityCardsEl = document.getElementById('communityCards');
+            communityCardsEl.innerHTML = gameState.communityCards
+                .map(card => `<div class="card">${card}</div>`)
+                .join('');
+            
+            // Update players
+            const playersEl = document.getElementById('players');
+            playersEl.innerHTML = gameState.players
+                .map((player, index) => `
+                    <div class="player-card ${index === gameState.currentPlayer ? 'active' : ''}">
+                        <h3>${player.name} ${gameState.foldedPlayers.includes(player.name) ? '(folded)' : ''}</h3>
+                        <div>Chips: $${player.chips}</div>
+                        <div>Cards: ${player.cards.map(card => 
+                            `<span class="card">${card}</span>`).join('')}</div>
+                    </div>
+                `)
+                .join('');
+
+            // Update game log
+            const gameLogEl = document.getElementById('gameLog');
+            gameLogEl.innerHTML = gameState.gameLog
+                .map(entry => `<div class="log-entry">${entry}</div>`)
+                .join('');
+        }
+        
+        socket.on('gameUpdate', updateGameState);
+    </script>
+</body>
+</html>
