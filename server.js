@@ -102,6 +102,25 @@ async function getAIDecision(player, gameState) {
         if (response.status === '200') {
             const responseText = response.body.choices[0].message.content.trim();
             console.log("AI decision:", responseText);
+
+            // This often comes back as "call (costs $0)" or "raise $50" instead of "raise 50", or "I would raise 10".
+            // Let's try and generously parse this
+
+            if (responseText.includes('call')) {
+                return 'call';
+            }
+            if (responseText.includes('raise')) {
+                const parsedResponse = responseText.match(/raise \$?(\d+)/);
+                if (parsedResponse) {
+                    return `raise ${parsedResponse[1]}`;
+                }
+            }
+
+            if (responseText.includes('fold')) {
+                return 'fold';
+            }
+
+
             return responseText
         }
         
@@ -208,6 +227,18 @@ async function advanceGame() {
     
         // Process decision
         processDecision(decision, currentPlayer);
+    }
+
+    // If all players have folded, end the round
+    if (gameState.foldedPlayers.length === gameState.players.length - 1) {
+        endHand();
+        gameState.round = 'preflop';
+        gameState.communityCards = [];
+        gameState.handNumber++;
+
+        // Broadcast updated game state
+        io.emit('gameUpdate', gameState);
+        return
     }
 
 
