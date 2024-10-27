@@ -200,9 +200,6 @@ function advanceRound() {
             break;
         case 'river':
             endHand();
-            gameState.round = 'preflop';
-            gameState.communityCards = [];
-            gameState.handNumber++;
             break;
     }
 }
@@ -232,10 +229,6 @@ async function advanceGame() {
     // If all players have folded, end the round
     if (gameState.foldedPlayers.length === gameState.players.length - 1) {
         endHand();
-        gameState.round = 'preflop';
-        gameState.communityCards = [];
-        gameState.handNumber++;
-
         // Broadcast updated game state
         io.emit('gameUpdate', gameState);
         return
@@ -266,6 +259,10 @@ function endHand() {
     winner.chips += gameState.pot;
     addToLog(`${winner.name} wins pot of $${gameState.pot} with ${winningHand.getHandName()}`);
     gameState.pot = 0;
+    gameState.round = 'preflop';
+    gameState.communityCards = [];
+    gameState.foldedPlayers = [];
+    gameState.handNumber++;
 }
 
 app.use(express.static(path.join(__dirname, 'public')));

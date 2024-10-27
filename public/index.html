@@ -1,4 +1,3 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,7 +5,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
             background: #f5f5f5;
@@ -16,40 +15,73 @@
             display: grid;
             grid-template-columns: 3fr 1fr;
             gap: 20px;
+            margin-top: 40px;
         }
-        
+
         .game-main {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            position: relative;
+            aspect-ratio: 4/3;
+            background: #107516;
+            border-radius: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border: 20px solid #8B4513;
+            margin: 100px 40px;
+        }
+
+        .table-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0,0,0,0.1);
+            padding: 20px;
+            border-radius: 100px;
+            width: 300px;
         }
         
         .community-cards {
-            text-align: center;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
         }
         
-        .players-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+        .pot-amount {
+            font-size: 1.5em;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .players-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
         }
         
         .player-card {
-            border: 1px solid #ccc;
+            position: absolute;
+            background: rgba(255,255,255,0.9);
             padding: 15px;
             border-radius: 8px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            width: 200px;
+            transform: translate(-50%, -50%);
         }
-        
+
         .player-card.active {
-            border: 2px solid #007bff;
+            border: 2px solid #ffd700;
+            background: rgba(255,255,255,1);
         }
-        
+
+        .player-bet {
+            position: absolute;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
         .card {
             display: inline-block;
             width: 40px;
@@ -62,15 +94,18 @@
             background: white;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-        
+
         .game-info {
             text-align: center;
             font-size: 1.2em;
-            margin-bottom: 20px;
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: absolute;
+            top: -110px;
+            left: 0;
+            right: 0;
         }
 
         .game-log {
@@ -79,6 +114,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             height: 100%;
+            margin-top: 100px;
         }
 
         .log-entries {
@@ -100,17 +136,14 @@
     <div class="game-container">
         <div class="game-main">
             <div class="game-info">
-                <div>Hand #<span id="handNumber">1</span></div>
-                <div>Round: <span id="round">preflop</span></div>
-                <div>Pot: $<span id="pot">0</span></div>
+                <span>Hand #<span id="handNumber">1</span></span> |
+                <span>Round: <span id="round">preflop</span></span>
             </div>
-            
-            <div class="community-cards">
-                <h2>Community Cards</h2>
-                <div id="communityCards"></div>
+            <div class="table-center">
+                <div class="community-cards" id="communityCards"></div>
+                <div class="pot-amount">Pot: $<span id="pot">0</span></div>
             </div>
-            
-            <div class="players-grid" id="players"></div>
+            <div class="players-circle" id="players"></div>
         </div>
 
         <div class="game-log">
@@ -122,6 +155,28 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        
+        function getPlayerPosition(index, total) {
+            const angle = (index * 360 / total - 90) * (Math.PI / 180);
+            const radiusX = 45;
+            const radiusY = 42;
+            
+            const x = 50 + radiusX * Math.cos(angle);
+            const y = 50 + radiusY * Math.sin(angle);
+            
+            return { x, y };
+        }
+
+        function getBetPosition(index, total) {
+            const angle = (index * 360 / total - 90) * (Math.PI / 180);
+            const radiusX = 32;  // Closer to center than player cards
+            const radiusY = 30;
+            
+            const x = 50 + radiusX * Math.cos(angle);
+            const y = 50 + radiusY * Math.sin(angle);
+            
+            return { x, y };
+        }
         
         function updateGameState(gameState) {
             // Update game info
@@ -135,18 +190,39 @@
                 .map(card => `<div class="card">${card}</div>`)
                 .join('');
             
-            // Update players
+            // Update players and their bets
             const playersEl = document.getElementById('players');
+            const totalPlayers = gameState.players.length;
+            
+            // First add player cards
             playersEl.innerHTML = gameState.players
-                .map((player, index) => `
-                    <div class="player-card ${index === gameState.currentPlayer ? 'active' : ''}">
-                        <h3>${player.name} ${gameState.foldedPlayers.includes(player.name) ? '(folded)' : ''}</h3>
-                        <div>Chips: $${player.chips}</div>
-                        <div>Cards: ${player.cards.map(card => 
-                            `<span class="card">${card}</span>`).join('')}</div>
-                    </div>
-                `)
+                .map((player, index) => {
+                    const pos = getPlayerPosition(index, totalPlayers);
+                    return `
+                        <div class="player-card ${index === gameState.currentPlayer ? 'active' : ''}"
+                             style="left: ${pos.x}%; top: ${pos.y}%;">
+                            <h3>${player.name} ${gameState.foldedPlayers.includes(player.name) ? '(folded)' : ''}</h3>
+                            <div>Chips: $${player.chips}</div>
+                            <div>Cards: ${player.cards.map(card => 
+                                `<span class="card">${card}</span>`).join('')}</div>
+                        </div>
+                    `;
+                })
                 .join('');
+
+            // Then add bet amounts
+            gameState.players.forEach((player, index) => {
+                const bet = gameState.playerBets[player.name];
+                if (bet && bet > 0) {
+                    const betPos = getBetPosition(index, totalPlayers);
+                    const betEl = document.createElement('div');
+                    betEl.className = 'player-bet';
+                    betEl.textContent = `$${bet}`;
+                    betEl.style.left = `${betPos.x}%`;
+                    betEl.style.top = `${betPos.y}%`;
+                    playersEl.appendChild(betEl);
+                }
+            });
 
             // Update game log
             const gameLogEl = document.getElementById('gameLog');
