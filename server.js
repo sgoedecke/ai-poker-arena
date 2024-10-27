@@ -20,14 +20,22 @@ const client = new ModelClient(
 
 let rateLimited = false;
 
+let models = [
+    'gpt-4o-mini',
+    'Phi-3-medium-4k-instruct',
+    'Meta-Llama-3.1-8B-Instruct',
+    'Mistral-small',
+    'Cohere-command-r',
+    'AI21-Jamba-1.5-Mini',
+    'Mistral-Nemo',
+    'Ministral-3B',
+    'Phi-3.5-MoE-instruct',
+
+]
+
 // Poker game state
 let gameState = {
-    players: [
-        { name: 'gpt-4o-mini', chips: 1000, cards: [], model: 'gpt-4o-mini' },
-        { name: 'Phi-3-medium-4k-instruct', chips: 1000, cards: [], model: 'Phi-3-medium-4k-instruct' },
-        { name: 'Meta-Llama-3.1-8B-Instruct', chips: 1000, cards: [], model: 'Meta-Llama-3.1-8B-Instruct' },
-        { name: 'Mistral-small', chips: 1000, cards: [], model: 'Mistral-small' },
-    ],
+    players: models.map(model => ({ name: model, chips: 1000, cards: [], model: model })),
     deck: [],
     communityCards: [],
     pot: 0,
@@ -38,7 +46,7 @@ let gameState = {
     currentBet: 0,
     playerBets: {}, // Track how much each player has bet this round
     lastRaiseAmount: 0,
-    minRaise: 50, // Minimum raise amount
+    minRaise: 10, // Minimum raise amount
     foldedPlayers: [] // Track players who have folded
 };
 
