@@ -18,6 +18,8 @@ const client = new ModelClient(
     new AzureKeyCredential(process.env.GITHUB_TOKEN)
 );
 
+let rateLimited = false;
+
 // Poker game state
 let gameState = {
     players: [
@@ -122,6 +124,11 @@ async function getAIDecision(player, gameState) {
 
 
             return responseText
+        } else if (response.status == '429') {
+            rateLimited = true;
+            setTimeout(() => {
+                rateLimited = false;
+            }, 60000);
         }
         
         // Fallback to fold if API fails
@@ -280,7 +287,9 @@ http.listen(PORT, () => {
 // Run game loop
 async function gameLoop() {
     while (true) {
-        await advanceGame();
+        if (!rateLimited) {
+            await advanceGame();           
+        }
         await new Promise(resolve => setTimeout(resolve, 2000));
     }
 }
