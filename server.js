@@ -22,15 +22,14 @@ let rateLimited = false;
 
 let models = [
     'gpt-4o-mini',
-    'Phi-3-medium-4k-instruct',
+    // 'Phi-3-medium-4k-instruct',
     'Meta-Llama-3.1-8B-Instruct',
-    'Mistral-small',
+    // 'Mistral-small',
     'Cohere-command-r',
     'AI21-Jamba-1.5-Mini',
-    'Mistral-Nemo',
+    // 'Mistral-Nemo',
     'Ministral-3B',
     'Phi-3.5-MoE-instruct',
-
 ]
 
 // Poker game state
