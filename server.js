@@ -158,9 +158,9 @@ function processDecision(decision, player) {
         } else {
             // If player can't afford raise, convert to call if possible
             if (player.chips >= amountToCall) {
-                processDealerDecision('call', player);
+                processDecision('call', player);
             } else {
-                processDealerDecision('fold', player);
+                processDecision('fold', player);
             }
         }
     } else if (decision === 'call') {
@@ -170,12 +170,11 @@ function processDecision(decision, player) {
             gameState.playerBets[player.name] = gameState.currentBet;
             addToLog(`${player.name} calls $${amountToCall}`);
         } else {
-            processDealerDecision('fold', player);
+            processDecision('fold', player);
         }
     } else {
         addToLog(`${player.name} folds`);
         gameState.foldedPlayers.push(player.name);
-        // Could add player to a 'folded' list if we want to skip their turns
     }
 }
 
